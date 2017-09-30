@@ -23,7 +23,6 @@ test_data_directory = os.path.join(ROOT_PATH, "TrafficSigns/Testing")
 
 
 class TrainData:
-    # _loop = 0
     _images = []
     _labels = []
 
@@ -40,15 +39,11 @@ class TrainData:
         return self._labels
 
     def next_batch(self, limit=100):
-        # index=random.sample(range(len(train.images)/limit), 1)[0]
-        # print(index)
-        i = self._images#[index*limit:(index+1)*limit]
-        l = self._labels#[index*limit:(index+1)*limit]
-        # self._loop += 1
+        i = self._images
+        l = self._labels
         return i, l
 
 class TestData:
-    # _loop = 0
     _images = []
     _labels = []
 
@@ -65,11 +60,8 @@ class TestData:
         return self._labels
 
     def next_batch(self, limit=100):
-        # index=random.sample(range(len(train.images)/limit), 1)[0]
-        # print(index)
-        i = self._images#[index*limit:(index+1)*limit]
-        l = self._labels#[index*limit:(index+1)*limit]
-        # self._loop += 1
+        i = self._images
+        l = self._labels
         return i, l
 
 
