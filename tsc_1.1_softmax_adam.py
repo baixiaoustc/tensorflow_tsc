@@ -62,8 +62,8 @@ predict = tf.argmax(Y, 1)
 correct_prediction = tf.equal(predict, tf.argmax(Y_, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-# training, learning rate = 0.005
-train_step = tf.train.GradientDescentOptimizer(0.005).minimize(cross_entropy)
+# training, learning rate = 0.003
+train_step = tf.train.AdamOptimizer(0.003).minimize(cross_entropy)
 
 # init
 init = tf.global_variables_initializer()
@@ -88,7 +88,7 @@ def training_step(i, update_test_data, update_train_data):
     # the backpropagation training step
     sess.run(train_step, feed_dict={X: batch_X, Y_: batch_Y})
 
-for i in range(1000+1):
+for i in range(200+1):
     training_step(i, i % 100 == 0, i % 20 == 0)
 
 # 运行模型

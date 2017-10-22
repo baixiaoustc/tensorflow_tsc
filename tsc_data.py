@@ -16,6 +16,14 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import random
 
+
+
+ROOT_PATH = "/Users/baixiao/Go/src/github.com/baixiaoustc/tensorflow_pytest"
+train_data_directory = os.path.join(ROOT_PATH, "TrafficSigns/Training")
+test_data_directory = os.path.join(ROOT_PATH, "TrafficSigns/Testing")
+
+
+
 def load_image_into_numpy_array(image):
     (im_width, im_height) = image.size
     return np.array(image.getdata()).reshape(im_height, im_width, 1).astype(np.uint8)
@@ -37,6 +45,51 @@ def load_data(data_directory):
             # print label
             labels.append(label)
     return images, labels
+
+
+
+class TrainData:
+    _images = []
+    _labels = []
+
+    def __init__(self):
+        self._images, self._labels = load_data(train_data_directory)
+        print("TrainData", len(self._images), len(self._labels))
+
+    @property
+    def images(self):
+        return self._images
+
+    @property
+    def labels(self):
+        return self._labels
+
+    def next_batch(self, limit=100):
+        i = self._images
+        l = self._labels
+        return i, l
+
+
+class TestData:
+    _images = []
+    _labels = []
+
+    def __init__(self):
+        self._images, self._labels = load_data(test_data_directory)
+        print("TestData", len(self._images), len(self._labels))
+
+    @property
+    def images(self):
+        return self._images
+
+    @property
+    def labels(self):
+        return self._labels
+
+    def next_batch(self, limit=100):
+        i = self._images
+        l = self._labels
+        return i, l
 
 
 '''
