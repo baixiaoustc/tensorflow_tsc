@@ -41,10 +41,10 @@ X = tf.placeholder(tf.float32, [None, 28, 28, 1])
 Y_ = tf.placeholder(tf.float32, [None, TAEGET_NUM])
 
 # five layers and their number of neurons (tha last layer has 10 softmax neurons)
-L = 300
-M = 150
-N = 100
-O = 80
+L = 500
+M = 250
+# N = 100
+# O = 80
 # Weights initialised with small random values between -0.2 and +0.2
 # When using RELUs, make sure biases are initialised with small *positive* values for example 0.1 = tf.ones([K])/10
 W1 = tf.Variable(tf.truncated_normal([784, L], stddev=0.1))  # 784 = 28 * 28
@@ -60,8 +60,8 @@ B5 = tf.Variable(tf.zeros([TAEGET_NUM]))
 
 # The model
 XX = tf.reshape(X, [-1, 784])
-Y1 = tf.nn.relu(tf.matmul(XX, W1) + B1)
-Y2 = tf.nn.relu(tf.matmul(Y1, W2) + B2)
+Y1 = tf.nn.sigmoid(tf.matmul(XX, W1) + B1)
+Y2 = tf.nn.sigmoid(tf.matmul(Y1, W2) + B2)
 # Y3 = tf.nn.sigmoid(tf.matmul(Y2, W3) + B3)
 # Y4 = tf.nn.sigmoid(tf.matmul(Y3, W4) + B4)
 Ylogits = tf.matmul(Y2, W5) + B5
@@ -88,7 +88,7 @@ correct_prediction = tf.equal(predict, tf.argmax(Y_, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 # training step, learning rate = 0.003
-train_step = tf.train.AdamOptimizer(0.003).minimize(cross_entropy)
+train_step = tf.train.AdamOptimizer(0.002).minimize(cross_entropy)
 
 # init
 init = tf.global_variables_initializer()
@@ -113,7 +113,7 @@ def training_step(i, update_test_data, update_train_data):
     # the backpropagation training step
     sess.run(train_step, feed_dict={X: batch_X, Y_: batch_Y})
 
-for i in range(200+1):
+for i in range(1000+1):
     training_step(i, i % 100 == 0, i % 20 == 0)
 
 # 运行模型

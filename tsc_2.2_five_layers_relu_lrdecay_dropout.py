@@ -42,32 +42,43 @@ X = tf.placeholder(tf.float32, [None, 28, 28, 1])
 Y_ = tf.placeholder(tf.float32, [None, TAEGET_NUM])
 # variable learning rate
 lr = tf.placeholder(tf.float32)
+# Probability of keeping a node during dropout = 1.0 at test time (no dropout) and 0.75 at training time
+pkeep = tf.placeholder(tf.float32)
 
 # five layers and their number of neurons (tha last layer has 10 softmax neurons)
 L = 500
 M = 250
-# N = 150
-# O = 100
+N = 150
+O = 100
 # Weights initialised with small random values between -0.2 and +0.2
 # When using RELUs, make sure biases are initialised with small *positive* values for example 0.1 = tf.ones([K])/10
 W1 = tf.Variable(tf.truncated_normal([784, L], stddev=0.1))  # 784 = 28 * 28
 B1 = tf.Variable(tf.zeros([L])/TAEGET_NUM)
 W2 = tf.Variable(tf.truncated_normal([L, M], stddev=0.1))
 B2 = tf.Variable(tf.zeros([M])/TAEGET_NUM)
-# W3 = tf.Variable(tf.truncated_normal([M, N], stddev=0.1))
-# B3 = tf.Variable(tf.zeros([N])/TAEGET_NUM)
-# W4 = tf.Variable(tf.truncated_normal([N, O], stddev=0.1))
-# B4 = tf.Variable(tf.zeros([O])/TAEGET_NUM)
-W5 = tf.Variable(tf.truncated_normal([M, TAEGET_NUM], stddev=0.1))
+W3 = tf.Variable(tf.truncated_normal([M, N], stddev=0.1))
+B3 = tf.Variable(tf.zeros([N])/TAEGET_NUM)
+W4 = tf.Variable(tf.truncated_normal([N, O], stddev=0.1))
+B4 = tf.Variable(tf.zeros([O])/TAEGET_NUM)
+W5 = tf.Variable(tf.truncated_normal([O, TAEGET_NUM], stddev=0.1))
 B5 = tf.Variable(tf.zeros([TAEGET_NUM]))
 
 # The model
 XX = tf.reshape(X, [-1, 784])
+
 Y1 = tf.nn.relu6(tf.matmul(XX, W1) + B1)
-Y2 = tf.nn.relu6(tf.matmul(Y1, W2) + B2)
-# Y3 = tf.nn.relu6(tf.matmul(Y2, W3) + B3)
-# Y4 = tf.nn.relu6(tf.matmul(Y3, W4) + B4)
-Ylogits = tf.matmul(Y2, W5) + B5
+Y1d = tf.nn.dropout(Y1, pkeep)
+
+Y2 = tf.nn.relu6(tf.matmul(Y1d, W2) + B2)
+Y2d = tf.nn.dropout(Y2, pkeep)
+
+Y3 = tf.nn.relu6(tf.matmul(Y2d, W3) + B3)
+Y3d = tf.nn.dropout(Y3, pkeep)
+
+Y4 = tf.nn.relu6(tf.matmul(Y3d, W4) + B4)
+Y4d = tf.nn.dropout(Y4, pkeep)
+
+Ylogits = tf.matmul(Y4d, W5) + B5
 Y = tf.nn.softmax(Ylogits)
 print(X, XX, Y)
 
@@ -95,24 +106,24 @@ def training_step(i, update_test_data, update_train_data):
     batch_X, batch_Y = train.next_batch(BATCH_NUM)
 
     # learning rate decay
-    max_learning_rate = 0.002
+    max_learning_rate = 0.001
     min_learning_rate = 0.0001
     decay_speed = 200.0  # 0.003-0.0001-2000=>0.9826 done in 5000 iterations
     learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
 
     # compute training values for visualisation
     if update_train_data:
-        a, c = sess.run([accuracy, cross_entropy], feed_dict={X: batch_X, Y_: batch_Y})
+        a, c = sess.run([accuracy, cross_entropy], feed_dict={X: batch_X, Y_: batch_Y, pkeep: 1.0})
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c))
 
     # compute test values for visualisation
     if update_test_data:
         test_X, test_Y = test.next_batch()
-        a, c = sess.run([accuracy, cross_entropy], feed_dict={X: test_X, Y_: test_Y})
+        a, c = sess.run([accuracy, cross_entropy], feed_dict={X: test_X, Y_: test_Y, pkeep: 1.0})
         print(str(i) + ": ********* epoch " + " ********* test accuracy:" + str(a) + " test loss: " + str(c))
 
     # the backpropagation training step
-    sess.run(train_step, feed_dict={X: batch_X, Y_: batch_Y, lr: learning_rate})
+    sess.run(train_step, feed_dict={X: batch_X, Y_: batch_Y, lr: learning_rate, pkeep: 0.99})
 
 for i in range(200+1):
     training_step(i, i % 100 == 0, i % 20 == 0)
@@ -125,7 +136,7 @@ sample_images = [train.images[i] for i in sample_indexes]
 sample_labels = [train.labels[i] for i in sample_indexes]
 
 # Run the "predicted_labels" op.
-predicted = sess.run([predict], feed_dict={X: sample_images})[0]
+predicted = sess.run([predict], feed_dict={X: sample_images, pkeep: 1.0})[0]
 
 # Print the real and predicted labels
 # print(sample_labels)
