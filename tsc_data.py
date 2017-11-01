@@ -23,7 +23,7 @@ train_data_directory = os.path.join(ROOT_PATH, "TrafficSigns/Training")
 test_data_directory = os.path.join(ROOT_PATH, "TrafficSigns/Testing")
 
 
-
+# one channle
 def load_image_into_numpy_array(image):
     (im_width, im_height) = image.size
     return np.array(image.getdata()).reshape(im_height, im_width, 1).astype(np.uint8)
@@ -92,6 +92,74 @@ class TestData:
         return i, l
 
 
+
+# three channle
+def load_image_into_numpy_array3(image):
+    (im_width, im_height) = image.size
+    return np.array(image.getdata()).reshape(im_height, im_width, 3).astype(np.uint8)
+
+def load_data3(data_directory):
+    directories = [d for d in os.listdir(data_directory)
+                   if os.path.isdir(os.path.join(data_directory, d))]
+    labels = []
+    images = []
+    for d in directories:
+        label_directory = os.path.join(data_directory, d)
+        file_names = [os.path.join(label_directory, f) for f in os.listdir(label_directory) if f.endswith(".ppm")]
+        for f in file_names:
+            # images.append(skimage.data.imread(f))
+            imgfile = Image.open(f)
+            images.append(load_image_into_numpy_array3(imgfile.resize((28, 28), Image.NEAREST)))
+            label = np.zeros(62, dtype=np.int)
+            label[int(d)] = 1
+            # print label
+            labels.append(label)
+    return images, labels
+
+
+
+class TrainData3:
+    _images = []
+    _labels = []
+
+    def __init__(self):
+        self._images, self._labels = load_data3(train_data_directory)
+        print("TrainData", len(self._images), len(self._labels))
+
+    @property
+    def images(self):
+        return self._images
+
+    @property
+    def labels(self):
+        return self._labels
+
+    def next_batch(self, limit=100):
+        i = self._images
+        l = self._labels
+        return i, l
+
+
+class TestData3:
+    _images = []
+    _labels = []
+
+    def __init__(self):
+        self._images, self._labels = load_data3(test_data_directory)
+        print("TestData", len(self._images), len(self._labels))
+
+    @property
+    def images(self):
+        return self._images
+
+    @property
+    def labels(self):
+        return self._labels
+
+    def next_batch(self, limit=100):
+        i = self._images
+        l = self._labels
+        return i, l
 '''
 ROOT_PATH = "/Users/baixiao/Go/src/github.com/baixiaoustc/tensorflow_pytest"
 train_data_directory = os.path.join(ROOT_PATH, "TrafficSigns/Training")

@@ -12,12 +12,12 @@ import argparse
 import matplotlib.pyplot as plt
 import random
 import math
-from tsc_data import load_data, TrainData, TestData
+from tsc_data import load_data, TrainData3, TestData3
 tf.set_random_seed(0)
 
 
-train = TrainData()
-test = TestData()
+train = TrainData3()
+test = TestData3()
 
 BATCH_NUM = 4575
 TAEGET_NUM = 62
@@ -36,8 +36,8 @@ TAEGET_NUM = 62
 #       \x/x\x/         -- fully connected layer (softmax)      W5 [200, 10]           B5 [10]
 #        · · ·                                                  Y [batch, 10]
 
-# input X: 28x28 grayscale images, the first dimension (None) will index the images in the mini-batch
-X = tf.placeholder(tf.float32, [None, 28, 28, 1])
+# input X: 28x28 color images, the first dimension (None) will index the images in the mini-batch
+X = tf.placeholder(tf.float32, [None, 28, 28, 3])
 # correct answers will go here
 Y_ = tf.placeholder(tf.float32, [None, TAEGET_NUM])
 # variable learning rate
@@ -52,7 +52,7 @@ L = 8  # second convolutional layer output depth
 M = 12  # third convolutional layer
 N = 300  # fully connected layer
 
-W1 = tf.Variable(tf.truncated_normal([5, 5, 1, K], stddev=0.1))  # 5x5 patch, 1 input channel, K output channels
+W1 = tf.Variable(tf.truncated_normal([5, 5, 3, K], stddev=0.1))  # 5x5 patch, 1 input channel, K output channels
 B1 = tf.Variable(tf.ones([K])/TAEGET_NUM)
 W2 = tf.Variable(tf.truncated_normal([5, 5, K, L], stddev=0.1))
 B2 = tf.Variable(tf.ones([L])/TAEGET_NUM)
@@ -104,7 +104,7 @@ def training_step(i, update_test_data, update_train_data):
     batch_X, batch_Y = train.next_batch(BATCH_NUM)
 
     # learning rate decay
-    max_learning_rate = 0.001
+    max_learning_rate = 0.002
     min_learning_rate = 0.0001
     decay_speed = 200.0  # 0.003-0.0001-2000=>0.9826 done in 5000 iterations
     learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
@@ -123,7 +123,7 @@ def training_step(i, update_test_data, update_train_data):
     # the backpropagation training step
     sess.run(train_step, feed_dict={X: batch_X, Y_: batch_Y, lr: learning_rate, pkeep: 0.75})
 
-for i in range(200+1):
+for i in range(1000+1):
     training_step(i, i % 100 == 0, i % 20 == 0)
 
 # 运行模型
@@ -142,16 +142,20 @@ print("predicted", predicted)
 
 
 # Display the predictions and the ground truth visually.
-# fig = plt.figure(figsize=(10, 10))
-# for i in range(len(sample_images)):
-#     truth = np.argmax(sample_labels[i])
-#     # print(truth, sample_labels[i])
-#     prediction = predicted[i]
-#     plt.subplot(5, 2, 1+i)
-#     plt.axis('off')
-#     color = 'green' if truth == prediction else 'red'
-#     plt.text(40, 10, "Truth:        {0}\nPrediction: {1}".format(truth, prediction),
-#              fontsize=12, color=color)
-#     plt.imshow(sample_images[i].reshape(28,28))
-#
-# plt.show()
+fig = plt.figure(figsize=(10, 10))
+for i in range(len(sample_images)):
+    truth = np.argmax(sample_labels[i])
+    # print(truth, sample_labels[i])
+    prediction = predicted[i]
+    plt.subplot(5, 2, 1+i)
+    plt.axis('off')
+    color = 'green' if truth == prediction else 'red'
+    plt.text(40, 10, "Truth:        {0}\nPrediction: {1}".format(truth, prediction),
+             fontsize=12, color=color)
+    plt.imshow(sample_images[i].reshape(28, 28, 3))
+
+plt.show()
+
+
+# layers 4 8 12 300, patches 5x5str1 5x5str2 4x4str2 dropout best 0.891 after 200 iterations/ best 0.902 after 1000 iterations
+# layers 6 12 24 300, patches 5x5str1 4x4str2 4x4str2 dropout best 0.905 after 200 iterations/ best 0.916 after 1000 iterations

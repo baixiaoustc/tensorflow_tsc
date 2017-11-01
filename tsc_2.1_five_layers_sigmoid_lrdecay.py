@@ -22,19 +22,19 @@ test = TestData()
 BATCH_NUM = 4575
 TAEGET_NUM = 62
 
-# neural network structure for this sample:
+# neural network with 5 layers
 #
-# · · · · · · · · · ·      (input data, 1-deep)                 X [batch, 28, 28, 1]
-# @ @ @ @ @ @ @ @ @ @   -- conv. layer 5x5x1=>4 stride 1        W1 [5, 5, 1, 4]        B1 [4]
-# ∶∶∶∶∶∶∶∶∶∶∶∶∶∶∶∶∶∶∶                                           Y1 [batch, 28, 28, 4]
-#   @ @ @ @ @ @ @ @     -- conv. layer 5x5x4=>8 stride 2        W2 [5, 5, 4, 8]        B2 [8]
-#   ∶∶∶∶∶∶∶∶∶∶∶∶∶∶∶                                             Y2 [batch, 14, 14, 8]
-#     @ @ @ @ @ @       -- conv. layer 4x4x8=>12 stride 2       W3 [4, 4, 8, 12]       B3 [12]
-#     ∶∶∶∶∶∶∶∶∶∶∶                                               Y3 [batch, 7, 7, 12] => reshaped to YY [batch, 7*7*12]
-#      \x/x\x\x/        -- fully connected layer (relu)         W4 [7*7*12, 200]       B4 [200]
-#       · · · ·                                                 Y4 [batch, 200]
-#       \x/x\x/         -- fully connected layer (softmax)      W5 [200, 10]           B5 [10]
-#        · · ·                                                  Y [batch, 10]
+# · · · · · · · · · ·          (input data, flattened pixels)       X [batch, 784]   # 784 = 28*28
+# \x/x\x/x\x/x\x/x\x/       -- fully connected layer (sigmoid)      W1 [784, 200]      B1[200]
+#  · · · · · · · · ·                                                Y1 [batch, 200]
+#   \x/x\x/x\x/x\x/         -- fully connected layer (sigmoid)      W2 [200, 100]      B2[100]
+#    · · · · · · ·                                                  Y2 [batch, 100]
+#     \x/x\x/x\x/           -- fully connected layer (sigmoid)      W3 [100, 60]       B3[60]
+#      · · · · ·                                                    Y3 [batch, 60]
+#       \x/x\x/             -- fully connected layer (sigmoid)      W4 [60, 30]        B4[30]
+#        · · ·                                                      Y4 [batch, 30]
+#         \x/               -- fully connected layer (softmax)      W5 [30, 10]        B5[10]
+#          ·                                                        Y5 [batch, 10]
 
 # input X: 28x28 grayscale images, the first dimension (None) will index the images in the mini-batch
 X = tf.placeholder(tf.float32, [None, 28, 28, 1])
@@ -43,39 +43,33 @@ Y_ = tf.placeholder(tf.float32, [None, TAEGET_NUM])
 # variable learning rate
 lr = tf.placeholder(tf.float32)
 
-# three convolutional layers with their channel counts, and a
-# fully connected layer (tha last layer has 10 softmax neurons)
-K = 6  # first convolutional layer output depth
-L = 12  # second convolutional layer output depth
-M = 24  # third convolutional layer
-N = 300  # fully connected layer
-
-W1 = tf.Variable(tf.truncated_normal([5, 5, 1, K], stddev=0.1))  # 5x5 patch, 1 input channel, K output channels
-B1 = tf.Variable(tf.ones([K])/TAEGET_NUM)
-W2 = tf.Variable(tf.truncated_normal([4, 4, K, L], stddev=0.1))
-B2 = tf.Variable(tf.ones([L])/TAEGET_NUM)
-W3 = tf.Variable(tf.truncated_normal([4, 4, L, M], stddev=0.1))
-B3 = tf.Variable(tf.ones([M])/TAEGET_NUM)
-
-W4 = tf.Variable(tf.truncated_normal([7 * 7 * M, N], stddev=0.1))
-B4 = tf.Variable(tf.ones([N])/TAEGET_NUM)
-W5 = tf.Variable(tf.truncated_normal([N, TAEGET_NUM], stddev=0.1))
-B5 = tf.Variable(tf.ones([TAEGET_NUM]))
+# five layers and their number of neurons (tha last layer has 10 softmax neurons)
+L = 500
+M = 250
+# N = 150
+# O = 100
+# Weights initialised with small random values between -0.2 and +0.2
+# When using RELUs, make sure biases are initialised with small *positive* values for example 0.1 = tf.ones([K])/10
+W1 = tf.Variable(tf.truncated_normal([784, L], stddev=0.1))  # 784 = 28 * 28
+B1 = tf.Variable(tf.zeros([L])/TAEGET_NUM)
+W2 = tf.Variable(tf.truncated_normal([L, M], stddev=0.1))
+B2 = tf.Variable(tf.zeros([M])/TAEGET_NUM)
+# W3 = tf.Variable(tf.truncated_normal([M, N], stddev=0.1))
+# B3 = tf.Variable(tf.zeros([N])/TAEGET_NUM)
+# W4 = tf.Variable(tf.truncated_normal([N, O], stddev=0.1))
+# B4 = tf.Variable(tf.zeros([O])/TAEGET_NUM)
+W5 = tf.Variable(tf.truncated_normal([M, TAEGET_NUM], stddev=0.1))
+B5 = tf.Variable(tf.zeros([TAEGET_NUM]))
 
 # The model
-stride = 1  # output is 28x28
-Y1 = tf.nn.relu(tf.nn.conv2d(X, W1, strides=[1, stride, stride, 1], padding='SAME') + B1)
-stride = 2  # output is 14x14
-Y2 = tf.nn.relu(tf.nn.conv2d(Y1, W2, strides=[1, stride, stride, 1], padding='SAME') + B2)
-stride = 2  # output is 7x7
-Y3 = tf.nn.relu(tf.nn.conv2d(Y2, W3, strides=[1, stride, stride, 1], padding='SAME') + B3)
-
-# reshape the output from the third convolution for the fully connected layer
-YY = tf.reshape(Y3, shape=[-1, 7 * 7 * M])
-
-Y4 = tf.nn.sigmoid(tf.matmul(YY, W4) + B4)
-Ylogits = tf.matmul(Y4, W5) + B5
+XX = tf.reshape(X, [-1, 784])
+Y1 = tf.nn.sigmoid(tf.matmul(XX, W1) + B1)
+Y2 = tf.nn.sigmoid(tf.matmul(Y1, W2) + B2)
+# Y3 = tf.nn.relu6(tf.matmul(Y2, W3) + B3)
+# Y4 = tf.nn.relu6(tf.matmul(Y3, W4) + B4)
+Ylogits = tf.matmul(Y2, W5) + B5
 Y = tf.nn.softmax(Ylogits)
+print(X, XX, Y)
 
 # loss function: cross-entropy = - sum( Y_i * log(Yi) )
 #                           Y: the computed output vector
@@ -88,7 +82,7 @@ predict = tf.argmax(Ylogits, 1)
 correct_prediction = tf.equal(predict, tf.argmax(Y_, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-# training step, learning rate = 0.003
+# training step, learning rate will decay
 train_step = tf.train.AdamOptimizer(lr).minimize(cross_entropy)
 
 # init
@@ -96,14 +90,14 @@ init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
 
-# You can call this function in a loop to train the model, 100 images at a time
+# You can call this function in a loop to train the model
 def training_step(i, update_test_data, update_train_data):
     batch_X, batch_Y = train.next_batch(BATCH_NUM)
 
     # learning rate decay
     max_learning_rate = 0.002
-    min_learning_rate = 0.0001
-    decay_speed = 200.0  # 0.003-0.0001-2000=>0.9826 done in 5000 iterations
+    min_learning_rate = 0.001
+    decay_speed = 1000.0
     learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
 
     # compute training values for visualisation
@@ -154,5 +148,15 @@ print("predicted", predicted)
 # plt.show()
 
 
-# layers 4 8 12 300, patches 5x5str1 5x5str2 4x4str2 best 0.875 after 200 iterations
-# layers 6 12 24 200, patches 5x5str1 4x4str2 4x4str2 best 0.871 after 200 iterations
+# 0.002~0.0001, decay_speed = 1000.0     final 0.889 after 1k  with oscillation
+# 0.002~0.0001, decay_speed = 800.0     final 0.884 after 1k  with oscillation
+# 0.002~0.0001, decay_speed = 600.0     final 0.882 after 1k  with oscillation
+# 0.002~0.0001, decay_speed = 400.0     final 0.873 after 1k  with oscillation
+# 0.002~0.0001, decay_speed = 200.0     final 0.869 after 1k
+
+# 0.003~0.0001, decay_speed = 1000.0     final 0.867 after 1k  with oscillation
+# 0.003~0.0001, decay_speed = 200.0     final 0.868 after 1k  with oscillation
+
+# 0.002~0.001, decay_speed = 1000.0     final 0.887 after 1k  with oscillation
+# 0.002~0.001, decay_speed = 600.0     final 0.886 after 1k  with oscillation
+# 0.002~0.001, decay_speed = 200.0     final 0.874 after 1k  with oscillation

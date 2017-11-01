@@ -95,7 +95,7 @@ init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
 
-# You can call this function in a loop to train the model, 100 images at a time
+# You can call this function in a loop to train the model
 def training_step(i, update_test_data, update_train_data):
     batch_X, batch_Y = train.next_batch(BATCH_NUM)
 
