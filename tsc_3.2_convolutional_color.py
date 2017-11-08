@@ -50,7 +50,7 @@ L = 12  # second convolutional layer output depth
 M = 24  # third convolutional layer
 N = 300  # fully connected layer
 
-W1 = tf.Variable(tf.truncated_normal([5, 5, 3, K], stddev=0.1))  # 5x5 patch, 1 input channel, K output channels
+W1 = tf.Variable(tf.truncated_normal([5, 5, 3, K], stddev=0.1))  # 5x5 patch, 3 input channel, K output channels
 B1 = tf.Variable(tf.ones([K])/TAEGET_NUM)
 W2 = tf.Variable(tf.truncated_normal([4, 4, K, L], stddev=0.1))
 B2 = tf.Variable(tf.ones([L])/TAEGET_NUM)
